@@ -3,6 +3,7 @@ package com.example.hello.impl
 import java.time.LocalDateTime
 
 import akka.Done
+import akka.actor.{ActorSystem, Props}
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, PersistentEntity}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegistry}
@@ -39,6 +40,7 @@ class HellolagomEntity extends PersistentEntity {
     * The initial state. This is used if there is no snapshotted state to be found.
     */
   override def initialState: HellolagomState = HellolagomState("Hello", LocalDateTime.now.toString)
+  val actorSystem = ActorSystem("ActorSystem")
 
   /**
     * An entity can define different behaviours for different states, so the behaviour
@@ -64,6 +66,8 @@ class HellolagomEntity extends PersistentEntity {
       case (Hello(name), ctx, state) =>
         // Reply with a message built from the current message, and the name of
         // the person we're meant to say hello to.
+        val dbLogicActorRef = actorSystem.actorOf(Props[DBLogic], "DBActor")
+        dbLogicActorRef ! "insert"             // Sending message by using !
         ctx.reply(s"$message, $name!")
 
     }.onEvent {

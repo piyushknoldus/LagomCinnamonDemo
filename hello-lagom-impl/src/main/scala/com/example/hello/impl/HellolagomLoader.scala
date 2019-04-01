@@ -1,5 +1,6 @@
 package com.example.hello.impl
 
+import cinnamon.lagom.CircuitBreakerInstrumentation
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.api.ServiceLocator.NoServiceLocator
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
@@ -7,6 +8,7 @@ import com.lightbend.lagom.scaladsl.server._
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 import com.example.hello.api.HellolagomService
+import com.lightbend.lagom.internal.spi.CircuitBreakerMetricsProvider
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.softwaremill.macwire._
 
@@ -32,9 +34,14 @@ abstract class HellolagomApplication(context: LagomApplicationContext)
   // Bind the service that this server provides
   override lazy val lagomServer = serverFor[HellolagomService](wire[HellolagomServiceImpl])
 
+  // Wire up the Cinnamon circuit breaker instrumentation
+  override lazy val circuitBreakerMetricsProvider: CircuitBreakerMetricsProvider =
+    wire[CircuitBreakerInstrumentation]
+
   // Register the JSON serializer registry
   override lazy val jsonSerializerRegistry = HellolagomSerializerRegistry
 
   // Register the hello-lagom persistent entity
   persistentEntityRegistry.register(wire[HellolagomEntity])
+  lazy val cnMetricsFactory: CinnamonMetricsFactory = wire[CinnamonMetricsFactoryImpl]
 }
